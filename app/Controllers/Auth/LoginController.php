@@ -2,8 +2,10 @@
 
 namespace App\Controllers\Auth;
 
+use Fantom\Log\Log;
 use Fantom\Session;
 use Fantom\Controller;
+use App\Support\Response;
 use App\Middlewares\GuestMiddleware;
 use App\Support\Authentication\Auth;
 use App\Support\Validations\AuthValidator;
@@ -18,22 +20,29 @@ class LoginController extends Controller
 		$this->view->render("Auth/Login/index.php");
 	}
 
-	protected function authenticate()
+	public function authenticate()
 	{
-		$validator = AuthValidator::validateLogin();
+		$res = new Response();
+		$v = AuthValidator::validateLogin();
 
 		// No need to set the error in the session
 		// it is already handled by view
-		if ($validator->hasError()) {
-			redirect('auth/login');
+		if ($v->hasError()) {
+			$res->setErrors($v->validationErrors()->all());
+			return $res->send();
 		}
 
-		if (!Auth::attempt($_POST['email'], $_POST['password'])) {
-			Session::flash('error', 'Invalid email or password.');
-			redirect('auth/login');
+		/*var_dump($_POST['email'], $_POST['password']);
+		exit();*/
+
+		// @TODO Handle username/email input for login
+		if ($_POST['email'] != "user@gmail.com" && $_POST['password'] != "12345678") {
+			$res->setErrors(['message' => 'Invalid Email or Password']);
+			Log::error(Auth::error());
+			return $res->send();
 		}
 
-		redirect('user');
+		return $res->send();
 	}
 
 	public function logout()
